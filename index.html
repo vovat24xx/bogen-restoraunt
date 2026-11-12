@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<!--
+  Meatdealer — Restaurant in Bogen
+  One file: HTML (structure) + CSS (look) + JavaScript (behaviour).
+  Restaurant Meatdealer in Bogen. Speisekarte und Gerichteverwaltung für diese Website.
+  Menüänderungen lassen sich über den Admin-Bereich vornehmen.
+-->
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Meatdealer | Burger, Chicken &amp; mehr in Bogen</title>
+  <meta name="description" content="Meatdealer in Bogen – Burger, Chicken, orientalische Spezialitäten und Pizza am Stadtplatz 51.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- Fonts load from Google Fonts. If offline, the site falls back to Georgia / system fonts. -->
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* ==========================================================
+       1. DESIGN TOKENS — EDIT ME: change colours here
+       ========================================================== */
+    :root {
+      --charcoal: #16161a;        /* main dark background */
+      --charcoal-2: #1f1f25;      /* slightly lighter dark surface */
+      --charcoal-3: #2a2a32;      /* borders on dark */
+      --cream: #f6efe3;           /* light surfaces */
+      --cream-2: #ebe2d1;
+      --ink: #1b1b1f;             /* text on cream */
+      --muted-dark: #a9a499;      /* muted text on dark */
+      --muted-light: #6d675c;     /* muted text on cream */
+      --gold: #c9a24d;            /* accent */
+      --gold-2: #e0bf73;
+      --danger: #b3382c;
+      --success: #2f7d4f;
+      --radius: 14px;
+      --shadow: 0 18px 50px rgba(0,0,0,.35);
+      --font-serif: "Cormorant Garamond", Georgia, "Times Neu Roman", serif;
+      --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+
+    /* ==========================================================
+       2. BASE STYLES
+       ========================================================== */
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+    body {
+      margin: 0; background: var(--charcoal); color: #f2ede3;
+      font-family: var(--font-sans); line-height: 1.6; -webkit-font-smoothing: antialiased;
+    }
+    img { max-width: 100%; display: block; }
+    h1, h2, h3 { font-family: var(--font-serif); line-height: 1.1; margin: 0; font-weight: 600; }
+    p { margin: 0; }
+    a { color: var(--gold-2); }
+    [hidden] { display: none !important; }
+    .container { width: min(1200px, 100% - 3rem); margin-inline: auto; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+    /* Visible keyboard focus for everything interactive */
+    :focus-visible { outline: 3px solid var(--gold-2); outline-offset: 3px; border-radius: 6px; }
+
+    .skip-link { position: absolute; left: -999px; top: 0; background: var(--gold); color: #111; padding: .6rem 1rem; z-index: 200; }
+    .skip-link:focus { left: 0; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+      font: 600 .95rem var(--font-sans); letter-spacing: .02em;
+      padding: .85rem 1.5rem; border-radius: 999px; border: 1.5px solid transparent;
+      cursor: pointer; text-decoration: none; transition: transform .2s, background .2s, color .2s, border-color .2s, box-shadow .2s;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn:active { transform: translateY(0); }
+    .btn-gold { background: var(--gold); color: #15130d; }
+    .btn-gold:hover { background: var(--gold-2); box-shadow: 0 8px 24px rgba(201,162,77,.3); }
+    .btn-outline { border-color: rgba(246,239,227,.45); color: #f6efe3; background: transparent; }
+    .btn-outline:hover { border-color: var(--gold-2); color: var(--gold-2); }
+    .btn-dark { background: var(--charcoal); color: var(--cream); }
+    .btn-dark:hover { background: #000; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-small { padding: .45rem .95rem; font-size: .82rem; }
+    .btn[disabled] { opacity: .5; cursor: not-allowed; transform: none; }
+
+    .eyebrow { color: var(--gold); text-transform: uppercase; letter-spacing: .28em; font-size: .75rem; font-weight: 600; }
+    .section { padding: clamp(4rem, 9vw, 8rem) 0; }
+    .section-head { text-align: center; max-width: 640px; margin: 0 auto 3rem; }
+    .section-head h2 { font-size: clamp(2.2rem, 5vw, 3.6rem); margin-top: .6rem; }
+    .section-head p { color: var(--muted-dark); margin-top: 1rem; }
+
+    /* ==========================================================
+       3. HEADER / NAVIGATION
+       ========================================================== */
+    .site-header {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(22,22,26,.88); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--charcoal-3);
+    }
+    .nav { display: flex; align-items: center; justify-content: space-between; gap: 1rem; height: 72px; }
+    .logo { display: flex; align-items: center; gap: .7rem; text-decoration: none; color: #fff; }
+    .logo-mark {
+      width: 38px; height: 38px; border-radius: 50%; border: 1.5px solid var(--gold);
+      display: grid; place-items: center; font-family: var(--font-serif); font-size: 1.35rem; color: var(--gold); font-weight: 700;
+    }
+    .logo-text { font-family: var(--font-serif); font-size: 1.6rem; letter-spacing: .22em; font-weight: 600; }
+    .nav-links { display: flex; align-items: center; gap: 2rem; list-style: none; margin: 0; padding: 0; }
+    .nav-links a { color: #e9e3d6; text-decoration: none; font-size: .92rem; font-weight: 500; padding: .3rem 0; border-bottom: 1.5px solid transparent; transition: color .2s, border-color .2s; }
+    .nav-links a:hover { color: var(--gold-2); border-color: var(--gold-2); }
+    .nav-actions { display: flex; align-items: center; gap: .6rem; }
+    .icon-btn {
+      position: relative; background: transparent; color: #f2ede3; border: 1.5px solid var(--charcoal-3);
+      border-radius: 999px; height: 42px; min-width: 42px; padding: 0 .9rem; cursor: pointer; font: 500 .88rem var(--font-sans);
+      display: inline-flex; align-items: center; justify-content: center; gap: .45rem; transition: border-color .2s, color .2s;
+    }
+    .icon-btn:hover { border-color: var(--gold); color: var(--gold-2); }
+    .menu-toggle { display: none; }
+
+    .mobile-only { display: none; }
+    @media (max-width: 880px) {
+      .mobile-only { display: block; }
+      .nav-links.open { max-height: 420px; }
+      .menu-toggle { display: inline-flex; }
+      .nav-links {
+        position: absolute; left: 0; right: 0; top: 72px; flex-direction: column; gap: 0; align-items: stretch;
+        background: var(--charcoal-2); border-bottom: 1px solid var(--charcoal-3);
+        max-height: 0; overflow: hidden; transition: max-height .3s ease;
+      }
+      .nav-links a { display: block; padding: 1rem 1.5rem; border-bottom: 1px solid var(--charcoal-3); }
+      .hide-mobile { display: none; }
+    }
+
+    /* ==========================================================
+       4. HERO
+       ========================================================== */
+    .hero {
+      min-height: calc(100vh - 72px); min-height: calc(100svh - 72px);
+      display: grid; align-items: center; position: relative; isolation: isolate;
+      background:
+        linear-gradient(100deg, rgba(14,14,17,.88) 0%, rgba(14,14,17,.67) 48%, rgba(14,14,17,.35) 100%),
+        url("https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=2200&q=85") center/cover,
+        radial-gradient(circle at 70% 30%, #3a3022, #16161a 70%);  /* fallback colour if the photo does not load */
+    }
+    .hero-inner { padding: 5rem 0; max-width: 680px; animation: rise .9s ease both; }
+    .hero h1 { font-size: clamp(3rem, 8vw, 6rem); margin: 1rem 0 1.4rem; color: #fff; }
+    .hero h1 em { color: var(--gold-2); font-style: italic; }
+    .hero p.lead { font-size: clamp(1.02rem, 1.6vw, 1.2rem); color: #d9d2c3; max-width: 520px; }
+    .hero-buttons { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 2.4rem; }
+    .hero-meta { display: flex; flex-wrap: wrap; gap: 2.2rem; margin-top: 3.2rem; color: var(--muted-dark); font-size: .85rem; }
+    .hero-meta strong { display: block; color: var(--gold-2); font-family: var(--font-serif); font-size: 1.5rem; font-weight: 600; }
+    @keyframes rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+
+    /* ==========================================================
+       5. MENU SECTION (cream surface)
+       ========================================================== */
+    .menu-section { background: var(--cream); color: var(--ink); }
+    .menu-section .section-head p { color: var(--muted-light); }
+    .menu-tools { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between; margin-bottom: 2.4rem; }
+    .chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+    .chip {
+      background: transparent; border: 1.5px solid #cfc4af; color: var(--ink); border-radius: 999px;
+      padding: .5rem 1.15rem; font: 500 .9rem var(--font-sans); cursor: pointer; transition: all .2s;
+    }
+    .chip:hover { border-color: var(--gold); }
+    .chip[aria-pressed="true"] { background: var(--charcoal); color: var(--gold-2); border-color: var(--charcoal); }
+    .search-wrap input {
+      width: min(320px, 100%); padding: .7rem 1.1rem; border-radius: 999px; border: 1.5px solid #cfc4af;
+      background: #fffaf1; font: 400 .95rem var(--font-sans); color: var(--ink);
+    }
+    .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.7rem; }
+    .dish {
+      background: #fffaf1; border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column;
+      box-shadow: 0 6px 24px rgba(40,30,10,.08); transition: transform .3s, box-shadow .3s; animation: rise .6s ease both;
+    }
+    .dish:hover { transform: translateY(-6px); box-shadow: 0 18px 40px rgba(40,30,10,.18); }
+    .dish-img { aspect-ratio: 4/3; overflow: hidden; background: var(--cream-2); }
+    .dish-img img { width: 100%; height: 100%; object-fit: cover; transition: transform .6s; }
+    .dish:hover .dish-img img { transform: scale(1.06); }
+    /* Image is a button so it is clickable and keyboard-accessible */
+    .dish-img-btn { display: block; width: 100%; height: 100%; padding: 0; margin: 0; border: 0; background: none; cursor: zoom-in; border-radius: 0; }
+    .dish-body { padding: 1.3rem 1.4rem 1.5rem; display: flex; flex-direction: column; gap: .5rem; flex: 1; }
+    .dish-cat { font-size: .7rem; text-transform: uppercase; letter-spacing: .2em; color: #9a7a2e; font-weight: 600; }
+    .dish h3 { font-size: 1.55rem; }
+    .dish p { color: var(--muted-light); font-size: .92rem; flex: 1; }
+    .dish-foot { display: flex; justify-content: space-between; align-items: center; margin-top: .8rem; }
+    .price { font-family: var(--font-serif); font-size: 1.6rem; font-weight: 700; }
+    .empty-state { text-align: center; padding: 3rem 1rem; color: var(--muted-light); grid-column: 1 / -1; }
+    .empty-state strong { display: block; font-family: var(--font-serif); font-size: 1.6rem; color: var(--ink); margin-bottom: .4rem; }
+
+    /* ==========================================================
+       6. ABOUT + CONTACT
+       ========================================================== */
+    .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(2rem, 6vw, 5rem); align-items: center; }
+    .about-img { border-radius: var(--radius); aspect-ratio: 4/5; object-fit: cover; width: 100%; box-shadow: var(--shadow); background: var(--charcoal-2); }
+    .about-text h2 { font-size: clamp(2.2rem, 5vw, 3.6rem); margin: .6rem 0 1.4rem; }
+    .about-text p { color: #cfc8b9; margin-bottom: 1rem; }
+    .about-stats { display: flex; gap: 2.5rem; margin-top: 2rem; }
+    .about-stats strong { display: block; font: 600 2.2rem var(--font-serif); color: var(--gold-2); }
+    .about-stats span { font-size: .82rem; color: var(--muted-dark); }
+
+    .contact { background: var(--charcoal-2); }
+    .contact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; }
+    .card { background: var(--charcoal); border: 1px solid var(--charcoal-3); border-radius: var(--radius); padding: 2rem; }
+    .card h3 { font-size: 1.6rem; color: var(--gold-2); margin-bottom: 1rem; }
+    .card p, .card li { color: #cfc8b9; font-size: .95rem; }
+    .hours-list { list-style: none; margin: 0; padding: 0; }
+    .hours-list li { display: flex; justify-content: space-between; gap: 1rem; padding: .5rem 0; border-bottom: 1px dashed var(--charcoal-3); }
+    .hours-list li:last-child { border: 0; }
+    .socials { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: 1rem; }
+    .socials a { border: 1px solid var(--charcoal-3); border-radius: 999px; padding: .35rem .9rem; text-decoration: none; font-size: .85rem; color: #e9e3d6; transition: all .2s; }
+    .socials a:hover { border-color: var(--gold); color: var(--gold-2); }
+
+    .site-footer { background: #0f0f12; padding: 3rem 0 2rem; border-top: 1px solid var(--charcoal-3); }
+    .footer-top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2rem; align-items: center; }
+    .footer-links { display: flex; flex-wrap: wrap; gap: 1.6rem; list-style: none; margin: 0; padding: 0; }
+    .footer-links a, .footer-links button { color: #cfc8b9; text-decoration: none; font-size: .9rem; background: none; border: 0; cursor: pointer; font-family: inherit; padding: 0; }
+    .footer-links a:hover, .footer-links button:hover { color: var(--gold-2); }
+    .footer-bottom { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--charcoal-3); color: var(--muted-dark); font-size: .8rem; display: flex; flex-wrap: wrap; justify-content: space-between; gap: .6rem; }
+
+    @media (max-width: 800px) { .about-grid { grid-template-columns: 1fr; } .about-img { aspect-ratio: 16/10; } }
+
+    .drawer-close { background: none; border: 0; font-size: 1.8rem; line-height: 1; cursor: pointer; color: var(--ink); padding: .2rem .6rem; border-radius: 8px; }
+    /* Admin form fields */
+    .field { display: grid; gap: .35rem; margin-bottom: 1rem; }
+    .field label { font-size: .85rem; font-weight: 600; }
+    .field input, .field select, .field textarea {
+      width: 100%; padding: .75rem .9rem; border: 1.5px solid #cfc4af; border-radius: 10px; background: #fff; color: var(--ink); font: 400 .95rem var(--font-sans);
+    }
+    .field textarea { resize: vertical; min-height: 90px; }
+    .field input[aria-invalid="true"], .field textarea[aria-invalid="true"] { border-color: var(--danger); }
+    .error-msg { color: var(--danger); font-size: .8rem; min-height: 1em; }
+    .file-picker { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; }
+    .file-picker-btn { color: var(--ink); border-color: #cfc4af; }
+    .file-picker-btn:hover { color: var(--ink); border-color: var(--gold); }
+    .file-picker:focus-within .file-picker-btn { outline: 3px solid var(--gold-2); outline-offset: 3px; }
+    .file-picker-status { color: var(--muted-light); font-size: .85rem; overflow-wrap: anywhere; }
+    /* Admin dialog */
+    dialog { border: 0; border-radius: var(--radius); padding: 1.6rem; max-width: 440px; width: calc(100% - 2rem); background: #fffaf1; color: var(--ink); box-shadow: var(--shadow); }
+    dialog::backdrop { background: rgba(0,0,0,.6); }
+    #adminDialog { max-width: 760px; max-height: 90vh; overflow-y: auto; }
+    .admin-dialog-head, .admin-panel-title { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+    .admin-dialog-head { margin-bottom: 1.2rem; }
+    .admin-dialog-head h2 { margin: .2rem 0 0; }
+    .admin-help { color: var(--muted-light); margin-bottom: 1rem; }
+    .admin-item-list { display: grid; gap: .65rem; }
+    .admin-item { display: flex; justify-content: space-between; align-items: center; gap: 1rem; border: 1px solid #e3dac6; border-radius: 10px; padding: .75rem; background: #fff; }
+    .admin-item span { display: block; color: var(--muted-light); font-size: .85rem; margin-top: .2rem; }
+    .admin-list-wrap { margin-top: 1.8rem; }
+    .admin-list-wrap h3, .admin-panel-title h3 { margin-bottom: .8rem; }
+    #adminDialog .drawer-close { background: transparent; border: 0; font-size: 1.7rem; cursor: pointer; color: var(--ink); }
+    #adminDialog .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    @media (max-width: 560px) { #adminDialog .form-grid { grid-template-columns: 1fr; } }
+    dialog h3 { font-size: 1.8rem; margin-bottom: .6rem; }
+    dialog p { color: var(--muted-light); margin-bottom: 1.2rem; }
+
+    /* ==========================================================
+       7. DISH DETAIL MODAL (opens on image click)
+       ========================================================== */
+    #dishDialog { max-width: 720px; width: calc(100% - 2rem); padding: 0; overflow: hidden; max-height: 92vh; }
+    #dishDialog[open] { animation: rise .35s ease both; }
+    .dish-modal { position: relative; display: flex; flex-direction: column; max-height: 92vh; overflow-y: auto; }
+    .dish-modal-img { width: 100%; aspect-ratio: 4/3; object-fit: cover; background: var(--cream-2); }
+    .dish-modal-body { padding: 1.6rem 1.8rem 1.9rem; display: flex; flex-direction: column; gap: .6rem; }
+    .dish-modal-body h3 { font-size: clamp(1.8rem, 4vw, 2.4rem); margin: 0; }
+    .dish-modal-body p { color: var(--muted-light); margin: 0; font-size: 1rem; }
+    .dish-modal-body .price { font-size: 2rem; margin-top: .6rem; }
+    .dish-modal-close {
+      position: absolute; top: .8rem; right: .8rem; z-index: 2; width: 42px; height: 42px; border-radius: 50%;
+      border: 0; background: rgba(22,22,26,.8); color: #fff; font-size: 1.6rem; line-height: 1; cursor: pointer;
+      display: grid; place-items: center; transition: background .2s;
+    }
+    .dish-modal-close:hover { background: #000; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+    }
+
+  </style>
+</head>
+
+<body>
+
+  <a href="#main" class="skip-link">Zum Inhalt springen</a>
+
+  <!-- ==========================================================
+       PUBLIC WEBSITE
+       ========================================================== -->
+  <div id="site">
+
+
+    <header class="site-header">
+      <div class="container nav">
+        <a href="#home" class="logo" aria-label="Meatdealer Startseite">
+          <span class="logo-mark" aria-hidden="true">M</span>
+          <span class="logo-text">Meatdealer</span>
+        </a>
+        <ul class="nav-links" id="navLinks">
+          <li><a href="#home">Startseite</a></li>
+          <li><a href="#menu">Speisekarte</a></li>
+          <li><a href="#about">Über uns</a></li>
+          <li><a href="#contact">Kontakt</a></li>
+        </ul>
+        <div class="nav-actions">
+          <a class="icon-btn hide-mobile" href="tel:+490000000">☎ Anrufen</a>
+          <button class="icon-btn menu-toggle" id="menuToggle" aria-label="Menü öffnen" aria-expanded="false">☰</button>
+        </div>
+      </div>
+    </header>
+
+    <main id="main">
+      <!-- HERO -->
+      <section class="hero" id="home" aria-labelledby="heroTitle">
+        <div class="container">
+          <div class="hero-inner">
+            <span class="eyebrow">Burger, Chicken &amp; Spezialitäten in Bogen</span>
+            <h1 id="heroTitle">Saftig. Knusprig. Meatdealer.</h1>
+            <p class="lead">Frisch gegrillte Burger, knuspriges Chicken und orientalische Spezialitäten – mitten in Bogen am Stadtplatz 51.</p>
+            <div class="hero-buttons">
+              <a href="tel:+490000000" class="btn btn-gold">☎ Jetzt anrufen &amp; bestellen</a>
+              <a href="https://www.google.com/maps/dir/?api=1&amp;destination=Stadtplatz+51%2C+94327+Bogen" class="btn btn-outline" target="_blank" rel="noopener noreferrer">Route öffnen</a>
+            </div>
+            <div class="hero-meta">
+              <div><strong>4</strong>leckere Kategorien</div>
+              <div><strong>Frisch</strong>mit besten Zutaten</div>
+              <div><strong>Bogen</strong>Stadtplatz 51</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MENU -->
+      <section class="section menu-section" id="menu" aria-labelledby="menuTitle">
+        <div class="container">
+          <div class="section-head">
+            <span class="eyebrow">Unsere Speisekarte</span>
+            <h2 id="menuTitle">Unsere Speisekarte</h2>
+            <p>Entdecken Sie unsere Burger, Chicken-Spezialitäten, orientalischen Gerichte und Pizza.</p>
+          </div>
+          <div class="menu-tools">
+            <div class="chips" id="chips" role="group" aria-label="Nach Kategorie filtern"></div>
+            <div class="search-wrap">
+              <label for="searchInput" class="sr-only">Gerichte nach Namen suchen</label>
+              <input type="search" id="searchInput" placeholder="Gerichte suchen…" autocomplete="off">
+            </div>
+          </div>
+          <div class="menu-grid" id="menuGrid" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <!-- ABOUT -->
+      <section class="section" id="about" aria-labelledby="aboutTitle">
+        <div class="container about-grid">
+          <img class="about-img" id="aboutImg" alt="Koch richtet ein Gericht in der Restaurantküche an"
+               src="https://images.unsplash.com/photo-1577219491135-ce391730fb2c?auto=format&fit=crop&w=1000&q=80">
+          <div class="about-text">
+            <span class="eyebrow">Unsere Geschichte</span>
+            <h2 id="aboutTitle">Guter Geschmack. Direkt in Bogen.</h2>
+            <p>Bei Meatdealer dreht sich alles um ehrlichen Geschmack: saftige Burger, knuspriges Chicken und orientalische Spezialitäten – frisch zubereitet im Herzen von Bogen.</p>
+            <p>Besuchen Sie uns am Stadtplatz 51 und genießen Sie entspannt vor Ort.</p>
+            <div class="about-stats">
+              <div><strong>Bogen</strong><span>Mitten im Zentrum</span></div>
+              <div><strong>Frisch</strong><span>Für Sie zubereitet</span></div>
+              <div><strong>Meatdealer</strong><span>Guter Geschmack</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CONTACT -->
+      <section class="section contact" id="contact" aria-labelledby="contactTitle">
+        <div class="container">
+          <div class="section-head">
+            <span class="eyebrow">Besuchen Sie uns</span>
+            <h2 id="contactTitle">Besuchen Sie uns in Bogen</h2>
+          </div>
+          <div class="contact-grid">
+            <div class="card">
+              <h3>Öffnungszeiten</h3>
+              <p>Für aktuelle Öffnungszeiten rufen Sie uns gerne an.</p><a href="tel:+490000000">+490000000</a>
+            </div>
+            <div class="card">
+              <h3>Kontakt</h3>
+              <p><strong>Adresse</strong><br>Stadtpl. 51<br>94327 Bogen</p>
+              <p style="margin-top:.8rem"><strong>Telefon</strong><br><a href="tel:+490000000">+490000000</a></p>
+            </div>
+            <div class="card">
+              <h3>Folgen Sie uns</h3>
+              <p>Folgen Sie uns für Neuigkeiten und aktuelle Spezialitäten.</p>
+              <div class="socials">
+                <a href="#contact" aria-label="Instagram (Platzhalter)">Instagram</a>
+                <a href="#contact" aria-label="Facebook (Platzhalter)">Facebook</a>
+                <a href="#contact" aria-label="TikTok (Platzhalter)">TikTok</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <div class="footer-top">
+          <a href="#home" class="logo"><span class="logo-mark" aria-hidden="true">M</span><span class="logo-text">Meatdealer</span></a>
+          <ul class="footer-links">
+            <li><a href="#home">Startseite</a></li>
+            <li><a href="#menu">Speisekarte</a></li>
+            <li><a href="#about">Über uns</a></li>
+            <li><a href="#contact">Kontakt</a></li>
+            <li><button type="button" id="footerAdmin">Admin</button></li>
+          </ul>
+        </div>
+        <div class="footer-bottom">
+          <span>© <span id="year"></span> Meatdealer · Stadtpl. 51, 94327 Bogen</span>
+          <span>Fotos: Unsplash. Erstellt mit HTML, CSS &amp; JavaScript.</span>
+        </div>
+      </div>
+    </footer>
+
+  </div><!-- /#site -->
+
+  <!-- DISH DETAIL MODAL -->
+  <dialog id="dishDialog" aria-labelledby="dishModalTitle">
+    <div class="dish-modal">
+      <button type="button" class="dish-modal-close" id="closeDish" aria-label="Fenster schließen">×</button>
+      <img class="dish-modal-img" id="dishModalImg" src="" alt="">
+      <div class="dish-modal-body">
+        <span class="dish-cat" id="dishModalCat"></span>
+        <h3 id="dishModalTitle"></h3>
+        <p id="dishModalDesc"></p>
+        <span class="price" id="dishModalPrice"></span>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ADMIN DIALOG -->
+  <dialog id="adminDialog" aria-labelledby="adminTitle">
+    <div class="admin-dialog-head">
+      <div><span class="eyebrow">Meatdealer</span><h2 id="adminTitle">Admin</h2></div>
+      <button type="button" class="drawer-close" id="closeAdmin" aria-label="Fenster schließen">×</button>
+    </div>
+    <form id="adminLoginForm">
+      <p class="admin-help">Mit dem Admin-Passwort anmelden, um die Speisekarte zu bearbeiten.</p>
+      <div class="field">
+        <label for="adminPassword">Passwort</label>
+        <input type="password" id="adminPassword" autocomplete="current-password" required>
+        <div class="error-msg" id="loginError" role="alert"></div>
+      </div>
+      <button class="btn btn-dark" type="submit">Anmelden</button>
+    </form>
+    <section id="adminPanel" hidden>
+      <div class="admin-panel-title"><h3>Speisekarte bearbeiten</h3><button type="button" class="btn btn-outline btn-small" id="adminLogout">Abmelden</button></div>
+      <form id="menuItemForm">
+        <div class="form-grid">
+          <div class="field"><label for="itemCategory">Kategorie</label><select id="itemCategory" required></select></div>
+          <div class="field"><label for="itemTitle">Titel</label><input id="itemTitle" maxlength="70" required></div>
+          <div class="field full"><label for="itemDescription">Beschreibung</label><textarea id="itemDescription" maxlength="240" required></textarea></div>
+          <div class="field"><label for="itemPrice">Preis (€)</label><input id="itemPrice" type="number" min="0.01" step="0.01" inputmode="decimal" required></div>
+          <div class="field full">
+            <label for="itemImageFile">Bild-Datei hochladen</label>
+            <div class="file-picker">
+              <input id="itemImageFile" class="sr-only" type="file" accept="image/*">
+              <label for="itemImageFile" class="btn btn-outline btn-small file-picker-btn" id="itemImageBtn" tabindex="0" role="button">Datei auswählen</label>
+              <span class="file-picker-status" id="itemImageStatus" aria-live="polite">Keine Datei ausgewählt</span>
+            </div>
+          </div>
+        </div>
+        <div class="error-msg" id="itemError" role="alert"></div>
+        <button type="submit" class="btn btn-gold">Gericht hinzufügen</button>
+      </form>
+      <div class="admin-list-wrap"><h3>Aktuelle Gerichte</h3><div id="adminItemList" class="admin-item-list"></div></div>
+    </section>
+  </dialog>
+
+
+  <script>
+    (function () {
+      "use strict";
+      const categories = ["Burger", "Chicken & Snacks", "Orientalisch", "Pizza"];
+      const menuKey = "meatdealer_menu_v1";
+      const adminPassword = "admin123";
+      const seedMenu = [
+        { id: "b1", category: "Burger", title: "Meatdealer Classic Burger", description: "Saftiges Rindfleisch-Patty, Cheddar, Salat, Tomate und hausgemachte Sauce.", price: 10.90, image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=900&q=80" },
+        { id: "b2", category: "Burger", title: "BBQ Bacon Burger", description: "Gegrilltes Rindfleisch, knuspriger Bacon, rauchige BBQ-Sauce und Röstzwiebeln.", price: 12.50, image: "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=900&q=80" },
+        { id: "b3", category: "Burger", title: "Cheeseburger", description: "Klassischer Cheeseburger mit geschmolzenem Käse, knackigem Salat und Gurken.", price: 9.90, image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=900&q=80" },
+        { id: "c1", category: "Chicken & Snacks", title: "Crispy Chicken Burger", description: "Knuspriges Hähnchenfilet, frischer Krautsalat und cremige Haus-Sauce.", price: 10.90, image: "https://images.unsplash.com/photo-1606755962773-d324e0a13086?auto=format&fit=crop&w=900&q=80" },
+        { id: "c2", category: "Chicken & Snacks", title: "Chicken Wings", description: "Würzig marinierte Wings, goldbraun gegrillt und mit Dip serviert.", price: 8.50, image: "https://images.unsplash.com/photo-1527477396000-e27163b481c2?auto=format&fit=crop&w=900&q=80" },
+        { id: "c3", category: "Chicken & Snacks", title: "Chicken Nuggets", description: "Zartes Hähnchen in knuspriger Panade, dazu ein Dip nach Wahl.", price: 7.90, image: "https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=900&q=80" },
+        { id: "o1", category: "Orientalisch", title: "Hummus mit Fladenbrot", description: "Hausgemachter Kichererbsen-Hummus mit Tahini und warmem Fladenbrot.", price: 6.50, image: "https://images.unsplash.com/photo-1577906096429-f73c2c312435?auto=format&fit=crop&w=900&q=80" },
+        { id: "o2", category: "Orientalisch", title: "Falafel-Teller", description: "Knusprige Falafel mit Hummus, frischem Salat und Fladenbrot.", price: 10.90, image: "https://images.unsplash.com/photo-1593001874117-c99c800e3eb8?auto=format&fit=crop&w=900&q=80" },
+        { id: "p1", category: "Pizza", title: "Pizza Margherita", description: "Tomatensauce, Mozzarella und frisches Basilikum auf knusprigem Teig.", price: 8.50, image: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=900&q=80" },
+        { id: "p2", category: "Pizza", title: "Pizza Salami", description: "Herzhafte Salami, Mozzarella und würzige Tomatensauce.", price: 10.90, image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=900&q=80" }
+      ];
+      const $ = (selector, root = document) => root.querySelector(selector);
+      const esc = value => String(value).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]);
+      const euro = value => Number(value).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+      let items = loadMenu();
+      let activeCategory = "Alle";
+      let searchText = "";
+
+      function loadMenu() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(menuKey));
+          return Array.isArray(saved) ? saved : seedMenu.slice();
+        } catch (_) { return seedMenu.slice(); }
+      }
+      /* Returns true if saved, false if the browser refused (e.g. storage full) */
+      function saveMenu() {
+        try { localStorage.setItem(menuKey, JSON.stringify(items)); return true; }
+        catch (_) { return false; }
+      }
+      function renderFilters() {
+        const box = $("#chips");
+        box.innerHTML = "";
+        ["Alle", ...categories].forEach(category => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "chip";
+          button.textContent = category;
+          button.setAttribute("aria-pressed", String(category === activeCategory));
+          button.addEventListener("click", () => { activeCategory = category; renderFilters(); renderMenu(); });
+          box.appendChild(button);
+        });
+      }
+      function renderMenu() {
+        const term = searchText.trim().toLocaleLowerCase("de-DE");
+        const visible = items.filter(item => (activeCategory === "Alle" || item.category === activeCategory) && (!term || item.title.toLocaleLowerCase("de-DE").includes(term)));
+        $("#menuGrid").innerHTML = visible.length ? visible.map(item => `
+          <article class="dish">
+            <div class="dish-img">
+              <button type="button" class="dish-img-btn" data-open="${esc(item.id)}" aria-label="${esc(item.title)} – Details anzeigen">
+                <img src="${esc(item.image || seedMenu[0].image)}" alt="${esc(item.title)}" loading="lazy">
+              </button>
+            </div>
+            <div class="dish-body"><span class="dish-cat">${esc(item.category)}</span><h3>${esc(item.title)}</h3><p>${esc(item.description)}</p>
+              <div class="dish-foot"><span class="price">${euro(item.price)}</span></div>
+            </div>
+          </article>`).join("") : '<div class="empty-state"><strong>Keine Gerichte gefunden</strong>Bitte ändern Sie Ihre Suche oder wählen Sie eine andere Kategorie.</div>';
+      }
+
+      /* ---------- Dish detail modal ---------- */
+      const dishDialog = $("#dishDialog");
+      $("#menuGrid").addEventListener("click", event => {
+        const button = event.target.closest("[data-open]");
+        if (!button) return;
+        const item = items.find(entry => entry.id === button.dataset.open);
+        if (!item) return;
+        const img = $("#dishModalImg");
+        img.src = item.image || seedMenu[0].image;
+        img.alt = item.title;
+        $("#dishModalCat").textContent = item.category;
+        $("#dishModalTitle").textContent = item.title;
+        $("#dishModalDesc").textContent = item.description;
+        $("#dishModalPrice").textContent = euro(item.price);
+        dishDialog.showModal();
+      });
+      $("#closeDish").addEventListener("click", () => dishDialog.close());
+      dishDialog.addEventListener("click", event => { if (event.target === dishDialog) dishDialog.close(); });
+
+      /* ---------- Admin ---------- */
+      const dialog = $("#adminDialog");
+      const adminLogin = $("#adminLoginForm");
+      const adminPanel = $("#adminPanel");
+      $("#itemCategory").innerHTML = categories.map(category => `<option>${esc(category)}</option>`).join("");
+      function renderAdminList() {
+        $("#adminItemList").innerHTML = items.map(item => `
+          <div class="admin-item"><div><strong>${esc(item.title)}</strong><span>${esc(item.category)} · ${euro(item.price)}</span></div>
+          <button type="button" class="btn btn-danger btn-small" data-delete="${esc(item.id)}" aria-label="${esc(item.title)} löschen">Löschen</button></div>`).join("") || '<p class="admin-help">Noch keine Gerichte eingetragen.</p>';
+      }
+      /* Reads an image file, scales it down (max 900px) and returns a compact JPEG data URL for localStorage */
+      function fileToDataUrl(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onerror = () => reject(new Error("read"));
+          reader.onload = () => {
+            const image = new Image();
+            image.onerror = () => reject(new Error("image"));
+            image.onload = () => {
+              const scale = Math.min(1, 900 / Math.max(image.width, image.height));
+              const canvas = document.createElement("canvas");
+              canvas.width = Math.round(image.width * scale);
+              canvas.height = Math.round(image.height * scale);
+              canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+              resolve(canvas.toDataURL("image/jpeg", 0.8));
+            };
+            image.src = reader.result;
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+      $("#footerAdmin").addEventListener("click", () => { adminLogin.hidden = false; adminPanel.hidden = true; $("#loginError").textContent = ""; $("#adminPassword").value = ""; dialog.showModal(); });
+      $("#closeAdmin").addEventListener("click", () => dialog.close());
+      dialog.addEventListener("click", event => { if (event.target === dialog) dialog.close(); });
+      adminLogin.addEventListener("submit", event => {
+        event.preventDefault();
+        if ($("#adminPassword").value !== adminPassword) { $("#loginError").textContent = "Das Passwort ist nicht korrekt."; return; }
+        $("#loginError").textContent = "";
+        adminLogin.hidden = true;
+        adminPanel.hidden = false;
+        renderAdminList();
+      });
+      $("#adminLogout").addEventListener("click", () => { adminPanel.hidden = true; adminLogin.hidden = false; $("#adminPassword").value = ""; });
+      $("#menuItemForm").addEventListener("submit", async event => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const errorBox = $("#itemError");
+        errorBox.textContent = "";
+        const file = $("#itemImageFile").files[0];
+        let image = seedMenu[0].image;
+        if (file) {
+          try { image = await fileToDataUrl(file); }
+          catch (_) { errorBox.textContent = "Das Bild konnte nicht gelesen werden."; return; }
+        }
+        const item = {
+          id: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()),
+          category: $("#itemCategory").value,
+          title: $("#itemTitle").value.trim(),
+          description: $("#itemDescription").value.trim(),
+          price: Number($("#itemPrice").value),
+          image: image
+        };
+        if (!item.title || !item.description || !Number.isFinite(item.price) || item.price <= 0) return;
+        items.push(item);
+        if (!saveMenu()) {
+          items.pop();
+          errorBox.textContent = "Speichern nicht möglich (Speicher voll). Bitte ein kleineres Bild oder eine Bild-URL verwenden.";
+          return;
+        }
+        renderMenu(); renderAdminList(); form.reset();
+        $("#itemImageStatus").textContent = "Keine Datei ausgewählt";
+      });
+      $("#itemImageFile").addEventListener("change", event => {
+        const chosen = event.target.files[0];
+        $("#itemImageStatus").textContent = chosen ? chosen.name : "Keine Datei ausgewählt";
+      });
+      $("#itemImageBtn").addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") { event.preventDefault(); $("#itemImageFile").click(); }
+      });
+      $("#adminItemList").addEventListener("click", event => {
+        const button = event.target.closest("[data-delete]");
+        if (!button) return;
+        items = items.filter(item => item.id !== button.dataset.delete);
+        saveMenu(); renderMenu(); renderAdminList();
+      });
+      $("#searchInput").addEventListener("input", event => { searchText = event.target.value; renderMenu(); });
+      const toggle = $("#menuToggle");
+      toggle.addEventListener("click", () => {
+        const isOpen = $("#navLinks").classList.toggle("open");
+        toggle.setAttribute("aria-expanded", String(isOpen));
+      });
+      $("#navLinks").querySelectorAll("a").forEach(link => link.addEventListener("click", () => { $("#navLinks").classList.remove("open"); toggle.setAttribute("aria-expanded", "false"); }));
+      $("#year").textContent = new Date().getFullYear();
+      renderFilters(); renderMenu();
+    })();
+  </script>
+
+</body>
+</html>
