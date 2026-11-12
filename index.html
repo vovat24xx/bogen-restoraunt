@@ -43,13 +43,14 @@
        2. BASE STYLES
        ========================================================== */
     *, *::before, *::after { box-sizing: border-box; }
-    html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+    html { scroll-behavior: smooth; scroll-padding-top: 80px; overflow-x: hidden; max-width: 100%; }
     body {
-      margin: 0; background: var(--charcoal); color: #f2ede3;
+      margin: 0; max-width: 100%; overflow-x: hidden; overflow-x: clip; /* clip = no sideways scroll, keeps the sticky header working */
+      background: var(--charcoal); color: #f2ede3;
       font-family: var(--font-sans); line-height: 1.6; -webkit-font-smoothing: antialiased;
     }
     img { max-width: 100%; display: block; }
-    h1, h2, h3 { font-family: var(--font-serif); line-height: 1.1; margin: 0; font-weight: 600; }
+    h1, h2, h3 { font-family: var(--font-serif); line-height: 1.1; margin: 0; font-weight: 600; overflow-wrap: break-word; }
     p { margin: 0; }
     a { color: var(--gold-2); }
     [hidden] { display: none !important; }
@@ -165,7 +166,7 @@
       width: min(320px, 100%); padding: .7rem 1.1rem; border-radius: 999px; border: 1.5px solid #cfc4af;
       background: #fffaf1; font: 400 .95rem var(--font-sans); color: var(--ink);
     }
-    .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.7rem; }
+    .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 1.7rem; }
     .dish {
       background: #fffaf1; border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column;
       box-shadow: 0 6px 24px rgba(40,30,10,.08); transition: transform .3s, box-shadow .3s; animation: rise .6s ease both;
@@ -192,12 +193,12 @@
     .about-img { border-radius: var(--radius); aspect-ratio: 4/5; object-fit: cover; width: 100%; box-shadow: var(--shadow); background: var(--charcoal-2); }
     .about-text h2 { font-size: clamp(2.2rem, 5vw, 3.6rem); margin: .6rem 0 1.4rem; }
     .about-text p { color: #cfc8b9; margin-bottom: 1rem; }
-    .about-stats { display: flex; gap: 2.5rem; margin-top: 2rem; }
+    .about-stats { display: flex; flex-wrap: wrap; gap: 1.5rem 2.5rem; margin-top: 2rem; }
     .about-stats strong { display: block; font: 600 2.2rem var(--font-serif); color: var(--gold-2); }
     .about-stats span { font-size: .82rem; color: var(--muted-dark); }
 
     .contact { background: var(--charcoal-2); }
-    .contact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; }
+    .contact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: 1.5rem; }
     .card { background: var(--charcoal); border: 1px solid var(--charcoal-3); border-radius: var(--radius); padding: 2rem; }
     .card h3 { font-size: 1.6rem; color: var(--gold-2); margin-bottom: 1rem; }
     .card p, .card li { color: #cfc8b9; font-size: .95rem; }
@@ -268,6 +269,17 @@
       display: grid; place-items: center; transition: background .2s;
     }
     .dish-modal-close:hover { background: #000; }
+
+    /* Category management (admin) */
+    .category-form { display: flex; gap: .6rem; flex-wrap: wrap; align-items: flex-start; }
+    .category-form .field { flex: 1 1 200px; margin-bottom: 0; }
+    .category-form .btn { flex: 0 0 auto; }
+
+    /* No sideways overflow on small phones */
+    .logo, .nav { min-width: 0; }
+    @media (max-width: 400px) {
+      .logo-text { font-size: 1.3rem; letter-spacing: .12em; }
+    }
 
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
@@ -465,6 +477,18 @@
         <div class="error-msg" id="itemError" role="alert"></div>
         <button type="submit" class="btn btn-gold">Gericht hinzufügen</button>
       </form>
+      <div class="admin-list-wrap">
+        <h3>Kategorien verwalten</h3>
+        <form id="categoryForm" class="category-form" novalidate>
+          <div class="field">
+            <label for="newCategory" class="sr-only">Neue Kategorie</label>
+            <input id="newCategory" maxlength="30" placeholder="Neue Kategorie, z. B. Desserts" autocomplete="off">
+          </div>
+          <button type="submit" class="btn btn-gold">Kategorie hinzufügen</button>
+        </form>
+        <div class="error-msg" id="categoryError" role="alert"></div>
+        <div id="adminCategoryList" class="admin-item-list" style="margin-top:.8rem"></div>
+      </div>
       <div class="admin-list-wrap"><h3>Aktuelle Gerichte</h3><div id="adminItemList" class="admin-item-list"></div></div>
     </section>
   </dialog>
@@ -473,8 +497,9 @@
   <script>
     (function () {
       "use strict";
-      const categories = ["Burger", "Chicken & Snacks", "Orientalisch", "Pizza"];
+      const baseCategories = ["Burger", "Chicken & Snacks", "Orientalisch", "Pizza"];
       const menuKey = "meatdealer_menu_v1";
+      const categoryKey = "meatdealer_categories_v1";
       const adminPassword = "admin123";
       const seedMenu = [
         { id: "b1", category: "Burger", title: "Meatdealer Classic Burger", description: "Saftiges Rindfleisch-Patty, Cheddar, Salat, Tomate und hausgemachte Sauce.", price: 10.90, image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=900&q=80" },
@@ -492,6 +517,7 @@
       const esc = value => String(value).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]);
       const euro = value => Number(value).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
       let items = loadMenu();
+      let categories = baseCategories.concat(loadCustomCategories());
       let activeCategory = "Alle";
       let searchText = "";
 
@@ -558,7 +584,57 @@
       const dialog = $("#adminDialog");
       const adminLogin = $("#adminLoginForm");
       const adminPanel = $("#adminPanel");
-      $("#itemCategory").innerHTML = categories.map(category => `<option>${esc(category)}</option>`).join("");
+      /* ---------- Categories (custom ones are stored in localStorage) ---------- */
+      function loadCustomCategories() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(categoryKey));
+          return Array.isArray(saved) ? saved.filter(name => typeof name === "string" && name.trim() && !baseCategories.includes(name)) : [];
+        } catch (_) { return []; }
+      }
+      function saveCustomCategories() {
+        try { localStorage.setItem(categoryKey, JSON.stringify(categories.filter(name => !baseCategories.includes(name)))); return true; }
+        catch (_) { return false; }
+      }
+      function renderCategorySelect() {
+        const select = $("#itemCategory");
+        const current = select.value;
+        select.innerHTML = categories.map(category => `<option>${esc(category)}</option>`).join("");
+        if (categories.includes(current)) select.value = current;
+      }
+      function renderAdminCategories() {
+        const custom = categories.filter(name => !baseCategories.includes(name));
+        $("#adminCategoryList").innerHTML = custom.length ? custom.map(name => `
+          <div class="admin-item"><div><strong>${esc(name)}</strong></div>
+          <button type="button" class="btn btn-danger btn-small" data-cat-delete="${esc(name)}" aria-label="Kategorie ${esc(name)} löschen">Löschen</button></div>`).join("") : '<p class="admin-help">Noch keine eigenen Kategorien.</p>';
+      }
+      function refreshCategories() { renderCategorySelect(); renderFilters(); renderAdminCategories(); }
+      refreshCategories();
+      $("#categoryForm").addEventListener("submit", event => {
+        event.preventDefault();
+        const input = $("#newCategory");
+        const errorBox = $("#categoryError");
+        const name = input.value.trim().replace(/\s+/g, " ");
+        errorBox.textContent = "";
+        if (!name) { errorBox.textContent = "Bitte einen Kategorienamen eingeben."; return; }
+        if (categories.some(existing => existing.toLocaleLowerCase("de-DE") === name.toLocaleLowerCase("de-DE"))) { errorBox.textContent = "Diese Kategorie gibt es bereits."; return; }
+        categories.push(name);
+        if (!saveCustomCategories()) { categories.pop(); errorBox.textContent = "Speichern nicht möglich (Speicher voll)."; return; }
+        input.value = "";
+        refreshCategories();
+      });
+      $("#adminCategoryList").addEventListener("click", event => {
+        const button = event.target.closest("[data-cat-delete]");
+        if (!button) return;
+        const name = button.dataset.catDelete;
+        const errorBox = $("#categoryError");
+        const used = items.filter(item => item.category === name).length;
+        if (used) { errorBox.textContent = `„${name}" enthält noch ${used} Gericht${used === 1 ? "" : "e"}. Bitte diese zuerst löschen.`; return; }
+        errorBox.textContent = "";
+        categories = categories.filter(existing => existing !== name);
+        saveCustomCategories();
+        if (activeCategory === name) activeCategory = "Alle";
+        refreshCategories(); renderMenu();
+      });
       function renderAdminList() {
         $("#adminItemList").innerHTML = items.map(item => `
           <div class="admin-item"><div><strong>${esc(item.title)}</strong><span>${esc(item.category)} · ${euro(item.price)}</span></div>
